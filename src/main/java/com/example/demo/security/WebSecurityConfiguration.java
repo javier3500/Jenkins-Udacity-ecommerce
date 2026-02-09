@@ -25,12 +25,20 @@ public class WebSecurityConfiguration extends WebSecurityConfigurerAdapter {
     @Override
     protected void configure(HttpSecurity http) throws Exception {
         http.cors().and().csrf().disable().authorizeRequests()
-                .antMatchers(HttpMethod.POST, SecurityConstants.SIGN_UP_URL).permitAll()
-                .anyRequest().authenticated()
-                .and()
-                .addFilter(new JWTAuthenticationFilter(authenticationManager()))
-                .addFilter(new JWTAuthenticationVerificationFilter(authenticationManager()))
-                .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS);
+            .antMatchers(HttpMethod.POST, SecurityConstants.SIGN_UP_URL).permitAll()
+            .anyRequest().authenticated()
+            .and()
+            // Solo agregar el filtro de autenticación JWT para /login, no para /api/user/create
+            .addFilter(getJWTAuthenticationFilter())
+            .addFilter(new JWTAuthenticationVerificationFilter(authenticationManager()))
+            .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS);
+
+        }
+
+        private JWTAuthenticationFilter getJWTAuthenticationFilter() throws Exception {
+        JWTAuthenticationFilter filter = new JWTAuthenticationFilter(authenticationManager());
+        filter.setFilterProcessesUrl("/login"); // Solo intercepta /login
+        return filter;
     }
 
     @Override

@@ -20,8 +20,18 @@ import com.example.demo.model.requests.CreateUserRequest;
 @RestController
 @RequestMapping("/api/user")
 public class UserController {
+	// Endpoint temporal para probar la alerta Splunk con datos fijos
+	@PostMapping("/splunk-test")
+	public ResponseEntity<String> testSplunkAlert() {
+		String username = "splunktest";
+		log.error("Cannot create user {} because the password is invalid", username);
+		splunkLogger.error("ALERTA_SPLUNK: Error crítico al crear usuario {}: contraseña inválida", username);
+		return ResponseEntity.badRequest().body("Alerta Splunk generada para usuario: " + username);
+	}
 
 	private static final Logger log = LoggerFactory.getLogger(UserController.class);
+	// Logger dedicado para alertas Splunk
+	private static final Logger splunkLogger = LoggerFactory.getLogger("SplunkAlertLogger");
 	private UserRepository userRepository;
 	private CartRepository cartRepository;
 	private BCryptPasswordEncoder bCryptPasswordEncoder;
@@ -59,11 +69,13 @@ public class UserController {
 		cartRepository.save(cart);
 		user.setCart(cart);
 		if (
-				createUserRequest.getPassword().length() <= 6 ||
-				!createUserRequest.getPassword().equals(createUserRequest.getConfirmPassword())
+			createUserRequest.getPassword().length() <= 6 ||
+			!createUserRequest.getPassword().equals(createUserRequest.getConfirmPassword())
 		) {
-			log.error("Cannot create user {} because the password is invalid", createUserRequest.getUsername());
-			return ResponseEntity.badRequest().build();
+		    log.error("Cannot create user {} because the password is invalid", createUserRequest.getUsername());
+		    // Alerta para Splunk
+		    splunkLogger.error("ALERTA_SPLUNK: Error crítico al crear usuario {}: contraseña inválida", createUserRequest.getUsername());
+		    return ResponseEntity.badRequest().build();
 		}
 		user.setPassword(bCryptPasswordEncoder.encode(createUserRequest.getPassword()));
 		userRepository.save(user);
